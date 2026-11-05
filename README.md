@@ -21,10 +21,10 @@ $ offload ocr text.png
 {"lines":["OFFLOAD TEST 2027"],"path":"text.png"}
 
 $ offload look --ops barcode qr.png
-{"path":"/path/to/qr.png","barcodes":["https://example.com/offload"]}
+{"path":"qr.png","barcodes":["https://example.com/offload"]}
 
 $ offload transcribe speech.wav
-{"path":"speech.wav","text":"Hello from Offload. This is a speech test.","seconds":0.31}
+{"path":"speech.wav","text":"Hello from Offload. This is a speech test. The sentence runs long enough for the sound classifier to hear several seconds of a human voice talking.","seconds":0.24}
 ```
 
 ## Requirements
@@ -41,8 +41,11 @@ $ offload transcribe speech.wav
 ```sh
 git clone https://github.com/BraedenBDev/offload && cd offload
 make install   # builds and copies offload to ~/.local/bin
-make test      # checks every command on your Mac
+make test      # runs the unit tests and tries every command on your Mac
+offload doctor # shows which models and languages are ready
 ```
+
+If your shell can't find `offload`, add `~/.local/bin` to your `PATH`.
 
 **2. Teach Claude Code to use it**
 
@@ -53,7 +56,7 @@ claude plugin install offload@offload
 
 Using another agent? `npx skills add BraedenBDev/offload` installs the skill for agents that support the [Agent Skills format](https://agentskills.io/specification).
 
-After that, ask Claude to do something large. The skill tells it to reach for `offload` first.
+After that, ask Claude to do something large. The skill tells it to reach for `offload` first. New here? The [getting started guide](docs/getting-started.md) walks through three real jobs.
 
 ## What it does
 
@@ -68,7 +71,7 @@ After that, ask Claude to do something large. The skill tells it to reach for `o
 | A few thousand labelled rows | `offload train-text`, `offload predict` | Your own classifier, free to run |
 | Near-duplicate images | `offload similar` | Matching pairs |
 
-Batch commands take `--out results.jsonl` and skip finished work when you rerun them, so an interrupted job picks up where it stopped. See the [command reference](docs/commands.md).
+Batch commands take `--out results.jsonl`, so an interrupted job picks up where it stopped. They skip finished work and retry failures. See the [command reference](docs/commands.md).
 
 ## Test results
 
@@ -77,7 +80,7 @@ We ran these on one M1 Max against a private library of about 8,500 short videos
 | Task | Result |
 |---|---|
 | Transcription | 288 s of audio in 6 s, against 41 s for whisper.cpp medium.en, with 94 to 97% word agreement |
-| OCR | 200 to 300 images a minute with 4 jobs |
+| OCR | 70 to 300 images a minute with 4 jobs, depending on what else the Mac is doing |
 | QR codes | 13 to 50 images a second |
 | Training a classifier | 7,576 rows in 17 s, then under 1 ms a prediction. It scored 20 of 25 on human labels, level with the paid API that supplied its training labels |
 | On-device summaries against Haiku | Haiku kept 52 numbers to the on-device model's 33 across 16 posts, so extraction stays with Haiku |
@@ -115,6 +118,8 @@ Apple's on-device text model failed several of our tests:
 - Safety filters blocked 9 of 24 harmless posts when we asked for JSON.
 - Its summaries dropped recipe steps and numbers.
 
+Apple's newer `RecognizeTextRequest` found about half the words of the older OCR API on our dense test images, under every setting we tried, so `offload ocr` uses the older API.
+
 `generate` still works for rough gists and for data that must stay on your Mac. Image generation returned `notSupported` from a command-line tool, so offload leaves it out.
 
 ## Privacy and safety
@@ -132,6 +137,15 @@ Other projects cover parts of this, and some may suit you better:
 - [claude-code-apple-skills](https://github.com/rshankras/claude-code-apple-skills) helps you build Apple apps, which is a different job.
 
 offload combines the batch tools, the routing skill and the published test results in one install.
+
+## Documentation
+
+| Read | For |
+|---|---|
+| [Getting started](docs/getting-started.md) | Three worked jobs, and fixes for common problems |
+| [Command reference](docs/commands.md) | Every command, option and exit code |
+| [Capabilities](skills/offload/references/capabilities.md) | What we tested, what failed, and the limits |
+| [Security](SECURITY.md) | What leaves your Mac, and how untrusted content is handled |
 
 ## Contributing
 

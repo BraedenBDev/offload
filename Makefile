@@ -10,6 +10,7 @@ install: build
 	@echo "Installed $(PREFIX)/bin/offload"
 
 test: build
+	swift test
 	PATH="$(CURDIR)/.build/release:$$PATH" scripts/selftest.sh
 
 bench: build

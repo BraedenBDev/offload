@@ -10,7 +10,7 @@ c barcode "$(offload look --ops barcode qr.png 2>/dev/null)" 'example.com/offloa
 c similar "$(offload similar --max-distance 5 text.png qr.png 2>/dev/null)" 'distance'
 c doc "$(offload doc text.png 2>/dev/null)" 'OFFLOAD'
 c transcribe "$(offload transcribe speech.wav 2>/dev/null)" 'speech test'
-c sound "$(offload sound speech.wav 2>/dev/null)" 'speech'
+c sound "$(offload sound speech.wav 2>/dev/null)" '"label":"speech"'
 offload translate --in $T/es.jsonl --out $T/t.out 2>/dev/null; c translate "$(cat $T/t.out)" 'hello\|world'
 offload extract --in $T/en.jsonl --out $T/x.out 2>/dev/null; c extract "$(cat $T/x.out)" 'apple.com'
 offload embed --in $T/en.jsonl --out $T/e.out 2>/dev/null; c embed "$(cat $T/e.out)" 'vector'
@@ -22,4 +22,10 @@ for i in range(30):
     print(json.dumps({'text':f'chicken pasta recipe with garlic and butter number {i}','label':'food'}))
     print(json.dumps({'text':f'python code compiler and software bug number {i}','label':'dev'}))" > $T/tr.jsonl
 offload train-text --in $T/tr.jsonl --out $T/m.mlmodelc >/dev/null 2>&1; printf '{"id":"a","text":"a garlic butter pasta recipe"}\n' > $T/p.jsonl; offload predict --model $T/m.mlmodelc --in $T/p.jsonl --out $T/p.out 2>/dev/null; c train-predict "$(cat $T/p.out)" '"label":"food"'
+c embed-query "$(offload embed-query 'hello there' 2>/dev/null)" '='
+c doctor "$(offload doctor 2>/dev/null)" 'text model'
+c version "$(grep '"version"' ../../.claude-plugin/plugin.json)" "\"$(offload version)\""
+offload look --ops barcode --out $T/r.out qr.png 2>/dev/null; offload look --ops barcode --out $T/r.out qr.png 2>/dev/null; c resume "$(wc -l < $T/r.out)" '^ *1$'
+offload look --ops barcodes qr.png >/dev/null 2>&1; c bad-op "$?" '^2$'
+mkdir $T/keep; offload train-text --in $T/tr.jsonl --out $T/keep >/dev/null 2>&1; c train-refuses-folder "$?" '^2$'
 rm -rf $T; echo "failures: $F"; exit $F

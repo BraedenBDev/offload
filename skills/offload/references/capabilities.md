@@ -8,7 +8,7 @@ These numbers come from one machine, and some samples are small. The classifier 
 
 | Command | What it does | Measured | Limits |
 |---|---|---|---|
-| `ocr` | Text from images | 200 to 300 images a minute, with 4 jobs, on 1080 by 1446 contact sheets | Garbles small text and some Chinese |
+| `ocr` | Text from images | 70 to 300 images a minute, with 4 jobs, on 1080 by 1446 contact sheets, depending on load | Garbles small text and some Chinese |
 | `look --ops barcode` | QR codes and barcodes | 13 to 50 images a second; decoded a link hidden in a video | Needs the code large enough in the image |
 | `transcribe` | Speech to text | 288 s of audio in 6 s, against 41 s for whisper.cpp medium.en; 94 to 97% word agreement with Whisper | Can miss names ("Primer" for "Framer"); other languages download on first use |
 | `translate` | Rows into English | Under 2 s a line; correct on Chinese and Spanish samples | Installed languages only; can misread short mixed text |
@@ -25,7 +25,7 @@ These numbers come from one machine, and some samples are small. The classifier 
 | `tag` | About 2 s a row, sensible tags, occasional safety blocks | Extra search terms |
 | `embed` | 0.03 s a row. Right on some searches, wrong on others, with scores bunched together | Meaning search combined with keyword search |
 | `look --ops classify,quality,faces,people,animals` | Fast, broad labels | Filtering images |
-| `sound` | Speech and music held up; false alarms such as gunfire on an ad | Detecting speech or music |
+| `sound` | Speech and music held up; false alarms such as gunfire on an ad; a 2-second clip returned nothing | Detecting speech or music in clips longer than a few seconds |
 
 ## Do not use
 
@@ -36,6 +36,7 @@ These numbers come from one machine, and some samples are small. The classifier 
 | The on-device model as a classifier | 14 of 25, against 20 for a trained classifier |
 | Guided JSON from the on-device model | Safety filters blocked 9 of 24 harmless posts, and 3 of 5 with the permissive setting |
 | `ImageCreator` image generation | Returned `notSupported` from a command-line tool |
+| Vision's newer `RecognizeTextRequest` for OCR | On 30 dense contact sheets it found about 700 unique words against about 1,330 for `VNRecognizeTextRequest`, under every setting we tried. It is faster and may suit simpler images, so `ocr` stays on the older API until a test shows otherwise |
 
 ## Not tested
 
