@@ -16,14 +16,15 @@
 It suits Claude Code users on Apple Silicon whose jobs run to hundreds or thousands of files. For a dozen files, let Claude read them.
 
 ```console
-$ offload ocr screenshot.png
-{"lines":["OFFLOAD TEST 2027"],"path":"screenshot.png"}
+$ cd tests/fixtures
+$ offload ocr text.png
+{"lines":["OFFLOAD TEST 2027"],"path":"text.png"}
 
-$ offload look --ops barcode flyer.png
-{"path":"flyer.png","barcodes":["https://example.com/offload"]}
+$ offload look --ops barcode qr.png
+{"path":"/path/to/qr.png","barcodes":["https://example.com/offload"]}
 
-$ offload transcribe voice-note.wav
-{"path":"voice-note.wav","text":"Hello from Offload. This is a speech test.","seconds":0.31}
+$ offload transcribe speech.wav
+{"path":"speech.wav","text":"Hello from Offload. This is a speech test.","seconds":0.31}
 ```
 
 ## Requirements
