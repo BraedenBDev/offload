@@ -5,7 +5,7 @@ Synthetic speech and clean images are easy cases, so read these as speed numbers
 import difflib, json, os, re, shutil, subprocess, tempfile, time
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-FIX = os.path.join(ROOT, "tests", "fixtures")
+FIX = os.path.join(ROOT, "skills", "offload", "fixtures")
 SENTENCES = [
     "The quick brown fox jumps over the lazy dog near the river bank.",
     "Please send the quarterly report to the finance team before Friday afternoon.",
@@ -70,7 +70,7 @@ with tempfile.TemporaryDirectory() as d:
             f.write(json.dumps({"text": f"chicken pasta recipe with garlic and butter {i}", "label": "food"}) + "\n")
             f.write(json.dumps({"text": f"python compiler bug in the software build {i}", "label": "dev"}) + "\n")
     s, _ = timed(["offload", "train-text", "--in", train, "--out", os.path.join(d, "m.mlmodelc")])
-    rows.append(("train-text", "1,000 rows", f"{s:.1f} s", "see make test"))
+    rows.append(("train-text", "1,000 rows", f"{s:.1f} s", "see the self-test"))
 
 print("| Command | Workload | Time | Result |\n|---|---|---|---|")
 for r in rows:

@@ -1,6 +1,6 @@
 # Capabilities and test results
 
-Tested on 5 Nov 2026 on macOS 27.0.1 with an M1 Max and 32 GB. The test data was a private library of about 8,500 short social videos and posts. It can't ship, so `make bench` offers a smaller synthetic check you can run yourself.
+Tested on 5 Nov 2026 on macOS 27.0.1 with an M1 Max and 32 GB. The test data was a private library of about 8,500 short social videos and posts. It can't ship, so `make bench` in the repo offers a smaller synthetic check you can run yourself.
 
 These numbers come from one machine, and some samples are small. The classifier result rests on 25 human labels and the Haiku comparison on 16 posts. Treat them as a starting point and test on your own data.
 
@@ -42,9 +42,9 @@ These numbers come from one machine, and some samples are small. The classifier 
 
 Apple's `fm serve`, Parakeet, Core Spotlight search and handwriting. Vision pose, segmentation and saliency had no use case. Private Cloud Compute stays out of scope, because offload runs on your Mac only.
 
-## Claude through claude_map.py
+## Claude through offload map
 
-Haiku on 16 posts with 3 workers took 32 s, about 2 s a row. Claude Code reported about $0.0006 a row. On a subscription, that use draws on your allowance and doesn't bill by the call.
+Haiku on 16 posts with 3 workers took 32 s, about 2 s a row, measured on the earlier Python version of this runner. Claude Code reported about $0.0006 a row. On a subscription, that use draws on your allowance and doesn't bill by the call.
 
 ## Token savings
 

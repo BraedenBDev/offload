@@ -8,12 +8,12 @@ labels: test-results
 
 **macOS version:**
 
-**`make test` output:**
+**`~/.claude/skills/offload/scripts/selftest.sh` output:**
 
 ```
 ```
 
-**`make bench` output:**
+**`make bench` output, if you built from source:**
 
 ```
 ```

@@ -16,7 +16,7 @@
 It suits Claude Code users on Apple Silicon whose jobs run to hundreds or thousands of files. For a dozen files, let Claude read them.
 
 ```console
-$ cd tests/fixtures
+$ cd ~/.claude/skills/offload/fixtures
 $ offload ocr text.png
 {"lines":["OFFLOAD TEST 2027"],"path":"text.png"}
 
@@ -30,33 +30,40 @@ $ offload transcribe speech.wav
 ## Requirements
 
 - macOS 27 on Apple Silicon. We have tested it on macOS 27.0.1 with an M1 Max, and nothing else yet.
-- Xcode 27 or its command line tools, to build from source.
+- Claude Code, for the skill and `offload map`. The `offload` command runs without it.
 - Apple Intelligence turned on, for `generate` and `tag` only.
-- Claude Code, for the skill and `claude_map.py`. The `offload` command runs without it.
+- Translation languages added in System Settings, for `translate` only.
+
+You don't need Xcode, git, Homebrew, Python or Node. The program ships inside the skill.
 
 ## Install
 
-**1. Install the command**
-
 ```sh
-git clone https://github.com/BraedenBDev/offload && cd offload
-make install   # builds and copies offload to ~/.local/bin
-make test      # runs the unit tests and tries every command on your Mac
-offload doctor # shows which models and languages are ready
+curl -fsSL https://raw.githubusercontent.com/BraedenBDev/offload/main/install.sh | sh
 ```
 
-If your shell can't find `offload`, add `~/.local/bin` to your `PATH`.
+This puts the skill in `~/.claude/skills/offload` and links `offload` into `~/.local/bin` for your own terminal. Then `offload setup` checks what each command needs, downloads the models, and opens System Settings where you need to turn something on. Run it again any time with `offload setup`. If your shell can't find `offload`, add `~/.local/bin` to your `PATH`. Claude doesn't need that, because the skill calls its own copy by full path.
 
-**2. Teach Claude Code to use it**
+Check everything works on your Mac:
+
+```sh
+~/.claude/skills/offload/scripts/selftest.sh
+```
+
+A `SKIP` line names a setting you haven't turned on, and isn't a failure. To remove offload, delete `~/.claude/skills/offload` and `~/.local/bin/offload`.
+
+After that, start a new Claude Code session and ask it to do something large. The skill tells it to reach for `offload` first. New here? The [getting started guide](docs/getting-started.md) walks through three real jobs.
+
+Rerun the same command to update.
+
+**Prefer a Claude Code plugin?** Claude Code clones plugins with git, so a fresh Mac needs Apple's command line tools first (`xcode-select --install`). The program still comes bundled.
 
 ```sh
 claude plugin marketplace add BraedenBDev/offload
 claude plugin install offload@offload
 ```
 
-Using another agent? `npx skills add BraedenBDev/offload` installs the skill for agents that support the [Agent Skills format](https://agentskills.io/specification).
-
-After that, ask Claude to do something large. The skill tells it to reach for `offload` first. New here? The [getting started guide](docs/getting-started.md) walks through three real jobs.
+**Using another agent?** `npx skills add BraedenBDev/offload` installs the skill for agents that support the [Agent Skills format](https://agentskills.io/specification). It needs Node, and we haven't tested this route.
 
 ## What it does
 
@@ -94,17 +101,17 @@ The skill gives Claude this order:
 1. **A script**, for counting, filtering and joining.
 2. **`offload`**, free and on-device, for reading and transforming.
 3. **A classifier you trained**, for sorting thousands of rows.
-4. **Haiku through `claude_map.py`**, for writing and extraction where details matter.
+4. **Haiku through `offload map`**, for writing and extraction where details matter.
 5. **Sonnet or larger**, for synthesis, reading the cheaper step's output.
 
 Each step feeds the next. Haiku reads local OCR text instead of images, and Sonnet reads Haiku's results instead of raw transcripts.
 
 ## Run Claude over a whole file
 
-[`claude_map.py`](skills/offload/scripts/claude_map.py) sends rows to any Claude model in batches, with tools switched off because the content is untrusted. It resumes after interruptions and stops at usage limits.
+`offload map` sends rows to any Claude model in batches, with tools switched off because the content is untrusted. It resumes after interruptions and stops at usage limits.
 
 ```sh
-python3 skills/offload/scripts/claude_map.py \
+offload map \
   --in rows.jsonl --out results.jsonl \
   --system @prompt.txt --schema item.json --model haiku
 ```
@@ -124,7 +131,7 @@ Apple's newer `RecognizeTextRequest` found about half the words of the older OCR
 
 ## Privacy and safety
 
-`offload` commands run on your Mac. `claude_map.py` sends rows to Anthropic, as any Claude Code session does. Text pulled from images and audio can contain instructions aimed at an AI, so treat it as data and never run what extraction finds. See [SECURITY.md](SECURITY.md).
+`offload` commands run on your Mac, except `offload map`, which sends rows to Anthropic as any Claude Code session does. Text pulled from images and audio can contain instructions aimed at an AI, so treat it as data and never run what extraction finds. See [SECURITY.md](SECURITY.md).
 
 offload calls Apple's public frameworks and doesn't use the `fm` command. Check Apple's macOS licence for your own use, including its terms on on-device models.
 
@@ -149,7 +156,7 @@ offload combines the batch tools, the routing skill and the published test resul
 
 ## Contributing
 
-Results from other Macs help most. Run `make test` and `make bench`, then [open an issue](.github/ISSUE_TEMPLATE/test-results.md) with your numbers. See [CONTRIBUTING.md](CONTRIBUTING.md).
+Results from other Macs help most. Run the self-test, then [open an issue](.github/ISSUE_TEMPLATE/test-results.md) with your numbers. See [CONTRIBUTING.md](CONTRIBUTING.md).
 
 ## Licence
 

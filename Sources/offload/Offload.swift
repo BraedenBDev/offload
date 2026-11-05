@@ -26,7 +26,9 @@ let commands: [Command] = [
   Command(name: "tag", group: "Transform (JSONL rows)", summary: "short topic tags", usage: "--in f --out f") { await Local.tag($0) },
   Command(name: "train-text", group: "Learn", summary: "train a classifier from labels", usage: "--in f --out model.mlmodelc") { try await TextTools.train($0) },
   Command(name: "predict", group: "Learn", summary: "run a trained classifier", usage: "--model m --in f --out f") { await TextTools.predict($0) },
-  Command(name: "doctor", group: "Setup", summary: "show which local models are ready", usage: "[--to en]") { await doctor($0) },
+  Command(name: "map", group: "Send to Claude", summary: "run a Claude model over rows", usage: "--in f --out f --system @file --schema f") { await ClaudeMap.main($0) },
+  Command(name: "doctor", group: "Setup", summary: "show what's ready and what's missing", usage: "[--to en] [--locale en-US]") { await Setup.doctor($0) },
+  Command(name: "setup", group: "Setup", summary: "get what's missing, asking as it goes", usage: "[--yes] [--languages \"es fr\"] [--open intelligence|translation]") { await Setup.run($0) },
   Command(name: "version", group: "Setup", summary: "print the version", usage: "") { _ in print(version) },
 ]
 
@@ -36,30 +38,11 @@ var usage: String {
   for c in commands {
     if c.group != group { group = c.group; lines += ["", group] }
     let name = c.name.padding(toLength: 12, withPad: " ", startingAt: 0)
-    let summary = c.summary.padding(toLength: 37, withPad: " ", startingAt: 0)
+    let summary = c.summary.padding(toLength: 48, withPad: " ", startingAt: 0)
     lines.append("  \(name)\(summary)offload \(c.name) \(c.usage)")
   }
-  lines += ["", "Paths can also come from stdin. Rows use --id (default id) and --text (default text).", "Commands given --out skip finished work, so you can rerun them after any interruption."]
+  lines += ["", "New here? Run offload setup in a terminal. It checks what each command needs and helps you get it.", "Paths can also come from stdin. Rows use --id (default id) and --text (default text).", "Commands given --out skip finished work, so you can rerun them after any interruption."]
   return lines.joined(separator: "\n")
-}
-
-func doctor(_ a: [String]) async {
-  let to = parseArgs(a, values: ["--to"]).values["--to"] ?? "en"
-  let v = ProcessInfo.processInfo.operatingSystemVersion
-  print("offload \(version)\nmacOS \(v.majorVersion).\(v.minorVersion).\(v.patchVersion)")
-  print("text model: \(SystemLanguageModel.default.availability)")
-  print("speech installed: \((await SpeechTranscriber.installedLocales).map { $0.identifier(.bcp47) }.sorted().joined(separator: " "))")
-  let av = LanguageAvailability(); let target = Locale.Language(identifier: to); var installed: [String] = [], downloadable: [String] = []
-  for l in await av.supportedLanguages {
-    switch await av.status(from: l, to: target) {
-    case .installed: installed.append(l.minimalIdentifier)
-    case .supported: downloadable.append(l.minimalIdentifier)
-    default: break
-    }
-  }
-  print("translate to \(to), installed: \(installed.sorted().joined(separator: " "))")
-  print("translate to \(to), can download: \(downloadable.sorted().joined(separator: " "))")
-  print("meaning search assets: \(NLContextualEmbedding(language: .english)?.hasAvailableAssets ?? false)")
 }
 
 @main struct Offload {
@@ -70,7 +53,7 @@ func doctor(_ a: [String]) async {
     case "--version": print(version)
     case let name?:
       guard let c = commands.first(where: { $0.name == name }) else { fputs("unknown command \(name)\n\n\(usage)\n", stderr); exit(2) }
-      try await c.run(Array(a.dropFirst()))
+      do { try await c.run(Array(a.dropFirst())) } catch { fputs("\(name): \(errText(error))\n", stderr); exit(1) }
     }
   }
 }

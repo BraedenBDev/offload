@@ -43,6 +43,13 @@ func positiveInt(_ p: Args, _ name: String, default fallback: Int) -> Int {
   return n
 }
 
+/// A row's id as a string. Numbers are fine, because resuming compares strings; anything else isn't an id.
+func rowID(_ v: Any?) -> String? {
+  if let s = v as? String { return s }
+  if let n = v as? NSNumber, CFGetTypeID(n) != CFBooleanGetTypeID() { return n.stringValue }
+  return nil
+}
+
 func jsonLine(_ o: [String: Any]) -> Data {
   var d = (try? JSONSerialization.data(withJSONObject: o, options: [.withoutEscapingSlashes])) ?? Data()
   d.append(0x0A)
@@ -68,8 +75,11 @@ func doneKeys(_ path: String, _ key: String) async -> Set<String> {
 
 func openAppend(_ path: String) -> FileHandle {
   if !FileManager.default.fileExists(atPath: path) { FileManager.default.createFile(atPath: path, contents: nil) }
-  guard let h = FileHandle(forWritingAtPath: path) else { fputs("cannot write \(path)\n", stderr); exit(1) }
-  _ = try? h.seekToEnd()
+  guard let h = FileHandle(forUpdatingAtPath: path) else { fputs("cannot write \(path)\n", stderr); exit(1) }
+  if let end = try? h.seekToEnd(), end > 0 {  // an interrupted run can leave half a line, which mustn't swallow the next row
+    try? h.seek(toOffset: end - 1)
+    if (try? h.read(upToCount: 1)) != Data([0x0A]) { write(Data([0x0A]), to: h) }
+  }
   return h
 }
 
@@ -119,14 +129,16 @@ struct Opts {
   }
 }
 
-/// Runs work over JSONL rows in order, appending to the output and skipping finished ids. Exits 1 if any row failed.
+/// Runs work over JSONL rows in order, appending to the output and skipping finished ids. Exits 1 if any row failed or couldn't be read.
 func eachRow(_ o: Opts, _ work: (String) async -> [String: Any]) async {
   let done = await doneKeys(o.output, "id"); let h = openAppend(o.output)
-  var n = 0, bad = 0; let start = Date()
+  var n = 0, bad = 0, skipped = 0; let start = Date()
   do {
     for try await l in URL(fileURLWithPath: o.input).lines {
       if n >= o.limit { break }
-      guard let j = try? JSONSerialization.jsonObject(with: Data(l.utf8)) as? [String: Any], let id = j[o.idField] as? String, !done.contains(id) else { continue }
+      if l.allSatisfy(\.isWhitespace) { continue }
+      guard let j = try? JSONSerialization.jsonObject(with: Data(l.utf8)) as? [String: Any], let id = rowID(j[o.idField]) else { skipped += 1; continue }
+      if done.contains(id) { continue }
       let t = Date()
       var rec: [String: Any] = if let text = j[o.textField] as? String { await work(String(text.prefix(o.maxChars))) } else { ["error": "row has no \(o.textField) field"] }
       rec["id"] = id; rec["ms"] = Int(Date().timeIntervalSince(t) * 1000)
@@ -135,6 +147,7 @@ func eachRow(_ o: Opts, _ work: (String) async -> [String: Any]) async {
       if n % 50 == 0 { fputs("\(n) done, \(bad) errors, \(Int(Date().timeIntervalSince(start)))s\n", stderr) }
     }
   } catch { fputs("cannot read \(o.input): \(errText(error))\n", stderr); exit(1) }
+  if skipped > 0 { fputs("skipped \(skipped) rows with bad JSON or no \(o.idField)\n", stderr) }
   fputs("finished: \(n) new, \(bad) errors, \(done.count) already done, \(Int(Date().timeIntervalSince(start)))s\n", stderr)
-  if bad > 0 { exit(1) }
+  if bad > 0 || skipped > 0 { exit(1) }
 }

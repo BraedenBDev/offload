@@ -12,4 +12,6 @@ jobs:
       - run: swift build -c release
       - run: swift test
       - run: .build/release/offload version
-      - run: python3 -m py_compile skills/offload/scripts/claude_map.py benchmarks/run.py
+      - run: python3 -m py_compile benchmarks/run.py
+      - run: make check-bundle
+      - run: sh -n install.sh

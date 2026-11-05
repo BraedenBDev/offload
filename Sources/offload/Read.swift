@@ -51,12 +51,14 @@ enum TextTools {
       if let j = try? JSONSerialization.jsonObject(with: Data(l.utf8)) as? [String: Any], let t = j["text"] as? String, let c = j["label"] as? String { data[c, default: []].append(t) } else { skipped += 1 }
     }
     if skipped > 0 { fputs("skipped \(skipped) rows without text and label\n", stderr) }
+    if data.count < 2 { fputs("training needs at least two labels and found \(data.count)\n", stderr); exit(2) }  // one label "trains" fine, then gives every row that label
+    let result = FileHandle(fileDescriptor: dup(STDOUT_FILENO)); fflush(nil); dup2(STDERR_FILENO, STDOUT_FILENO)  // Create ML logs to stdout, which must stay one JSON line
     let start = Date(); let m = try MLTextClassifier(trainingData: data)
-    let tmp = URL(fileURLWithPath: NSTemporaryDirectory()).appendingPathComponent(UUID().uuidString + ".mlmodel"); try m.write(to: tmp)
+    let tmp = URL(fileURLWithPath: NSTemporaryDirectory()).appendingPathComponent(UUID().uuidString + ".mlmodel"); defer { try? FileManager.default.removeItem(at: tmp) }
+    try m.write(to: tmp)
     let compiled = try await MLModel.compileModel(at: tmp); let dest = URL(fileURLWithPath: out)
     if FileManager.default.fileExists(atPath: out) { _ = try FileManager.default.replaceItemAt(dest, withItemAt: compiled) } else { try FileManager.default.moveItem(at: compiled, to: dest) }
-    try? FileManager.default.removeItem(at: tmp)
-    writeLine(["model": out, "seconds": Date().timeIntervalSince(start), "training_accuracy": 1 - m.trainingMetrics.classificationError, "validation_accuracy": 1 - m.validationMetrics.classificationError, "rows": data.values.map(\.count).reduce(0, +)])
+    writeLine(["model": out, "seconds": Date().timeIntervalSince(start), "training_accuracy": 1 - m.trainingMetrics.classificationError, "validation_accuracy": 1 - m.validationMetrics.classificationError, "rows": data.values.map(\.count).reduce(0, +)], to: result)
   }
 
   static func predict(_ a: [String]) async {

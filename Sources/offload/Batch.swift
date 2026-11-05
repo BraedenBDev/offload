@@ -17,9 +17,14 @@ enum Local {
     }
   }
 
+  private static func requireTextModel() {
+    if let problem = textModelProblem() { fputs("\(problem)\nRun offload setup in a terminal for help with this.\n", stderr); exit(1) }
+  }
+
   static func generate(_ a: [String]) async {
     let o = Opts(a)
     if o.instructions.isEmpty { fputs("--instructions is required\n", stderr); exit(2) }
+    requireTextModel()
     let m = SystemLanguageModel(useCase: .general, guardrails: o.permissive ? .permissiveContentTransformations : .default)
     LanguageModelSession(model: m, instructions: o.instructions).prewarm()
     await eachRow(o) { text in
@@ -37,7 +42,8 @@ enum Local {
   }
 
   static func tag(_ a: [String]) async {
-    let o = Opts(a); let m = SystemLanguageModel(useCase: .contentTagging, guardrails: o.permissive ? .permissiveContentTransformations : .default)
+    let o = Opts(a); requireTextModel()
+    let m = SystemLanguageModel(useCase: .contentTagging, guardrails: o.permissive ? .permissiveContentTransformations : .default)
     await eachRow(o) { text in
       do {
         let r = try await LanguageModelSession(model: m, instructions: "Reply with tags in English.").respond(to: text)
@@ -59,9 +65,9 @@ enum Local {
   }
 
   private static func embedder() async -> NLContextualEmbedding {
-    guard let m = NLContextualEmbedding(language: .english) else { fputs("embedding model unavailable\n", stderr); exit(1) }
+    guard let m = NLContextualEmbedding(language: .english) else { fputs("the search model isn't available on this Mac\n", stderr); exit(1) }
     if !m.hasAvailableAssets { _ = try? await m.requestAssets() }
-    guard (try? m.load()) != nil else { fputs("embedding model failed to load\n", stderr); exit(1) }
+    guard (try? m.load()) != nil else { fputs("the search model couldn't load. Check the internet connection, then run offload setup --yes to download it.\n", stderr); exit(1) }
     return m
   }
 
@@ -71,16 +77,25 @@ enum Local {
   }
 
   static func embedQuery(_ a: [String]) async {
-    guard let v = vector(await embedder(), a.joined(separator: " ")) else { exit(1) }
+    let words = a.joined(separator: " ")
+    if words.allSatisfy(\.isWhitespace) { fputs("embed-query needs some words\n", stderr); exit(2) }
+    guard let v = vector(await embedder(), words) else { fputs("could not embed that text\n", stderr); exit(1) }
     print(v)
   }
 
   static func translate(_ a: [String]) async {
-    let o = Opts(a); var sessions: [String: TranslationSession] = [:]; let target = Locale.Language(identifier: o.to)
+    let o = Opts(a); var sessions: [String: TranslationSession] = [:]; let target = Locale.Language(identifier: o.to); let availability = LanguageAvailability(); var flagged = Set<String>()
     await eachRow(o) { text in
       let r = NLLanguageRecognizer(); r.processString(text)
       guard let lang = r.dominantLanguage?.rawValue else { return ["text": text, "from": "unknown"] }
       if Locale.Language(identifier: lang).languageCode == target.languageCode { return ["text": text, "from": lang] }
+      switch await availability.status(from: Locale.Language(identifier: lang), to: target) {
+      case .installed: break
+      case .supported:
+        if flagged.insert(lang).inserted { fputs("\(lang) isn't installed for translation into \(o.to). Run offload setup --languages \(lang) in a terminal, or add it in System Settings, under General, Language & Region, Translation Languages.\n", stderr) }
+        return ["error": "not_installed: add \(lang) and \(o.to) in System Settings, General, Language & Region, Translation Languages", "from": lang]
+      default: return ["error": "unsupported_language: \(lang) to \(o.to)", "from": lang]
+      }
       do {
         let s = sessions[lang] ?? TranslationSession(installedSource: Locale.Language(identifier: lang), target: target)
         sessions[lang] = s

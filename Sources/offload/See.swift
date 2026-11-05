@@ -28,6 +28,7 @@ enum See {
   static func look(_ a: [String]) async {
     let p = parseArgs(a, values: ["--ops", "--out", "--jobs"])
     let ops = p.values["--ops"].map { Set($0.split(separator: ",").map(String.init)) } ?? allOps
+    if ops.isEmpty { fputs("--ops needs at least one of \(allOps.sorted().joined(separator: ","))\n", stderr); exit(2) }
     if let bad = ops.subtracting(allOps).first { fputs("unknown op \(bad); use \(allOps.sorted().joined(separator: ","))\n", stderr); exit(2) }
     await pathLoop(p.rest, out: p.values["--out"], jobs: positiveInt(p, "--jobs", default: 4)) { await analyze($0, ops) }
   }
@@ -35,7 +36,11 @@ enum See {
   // ponytail: compares every pair, so keep it under about 5,000 images; add clustering if bigger jobs need it.
   static func similar(_ a: [String]) async {
     let p = parseArgs(a, values: ["--max-distance"])
-    let limit = p.values["--max-distance"].flatMap(Float.init) ?? 0.25
+    var limit: Float = 0.25
+    if let raw = p.values["--max-distance"] {
+      guard let v = Float(raw), v.isFinite, v >= 0 else { fputs("--max-distance needs a number of 0 or more\n", stderr); exit(2) }
+      limit = v
+    }
     var prints: [(String, FeaturePrintObservation)] = []; var unread = 0
     for path in pathsOrStdin(p.rest) {
       if let o = try? await GenerateImageFeaturePrintRequest().perform(on: URL(fileURLWithPath: path)) { prints.append((path, o)) } else { unread += 1 }
