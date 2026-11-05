@@ -1,0 +1,12 @@
+{
+  "name": "offload",
+  "owner": { "name": "BraedenBDev" },
+  "description": "Run bulk work on Apple's on-device models and send Claude the results.",
+  "plugins": [
+    {
+      "name": "offload",
+      "source": "./",
+      "description": "Run bulk work on Apple's on-device models and send Claude the results."
+    }
+  ]
+}

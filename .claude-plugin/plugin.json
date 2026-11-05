@@ -1,0 +1,11 @@
+{
+  "name": "offload",
+  "description": "Run bulk work on Apple's on-device models and send Claude the results: OCR, QR codes, speech, translation, PDF tables, classifiers.",
+  "version": "0.1.0",
+  "author": { "name": "BraedenBDev" },
+  "homepage": "https://github.com/BraedenBDev/offload",
+  "repository": "https://github.com/BraedenBDev/offload",
+  "license": "MIT",
+  "icon": ".claude-plugin/icon.png",
+  "keywords": ["macos", "on-device", "ocr", "transcription", "batch", "apple-silicon"]
+}

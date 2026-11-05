@@ -1,0 +1,39 @@
+<!doctype html><html><head><meta charset="utf-8">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Schibsted+Grotesk:wght@500;700;800&family=DM+Mono:wght@400;500&display=swap">
+<style>
+/* Layout: bulk files stream in from the left, the Mac's band reads them, and a small stream of results reaches Claude. */
+:root{--bg:#EEF2F5;--ink:#14212B;--soft:#566875;--raw:#B9C6D0;--band:#0B7A75;--bandsoft:#D2E8E6;--out:#D9591F}
+body.dark{--bg:#0E1920;--ink:#EEF3F6;--soft:#93A6B3;--raw:#3A4D5A;--band:#2FB5AB;--bandsoft:#123A3C;--out:#F2854D}
+*{box-sizing:border-box}html,body{margin:0;background:var(--bg)}
+#a{position:relative;overflow:hidden;background:var(--bg);color:var(--ink);font-family:"Schibsted Grotesk",Arial,sans-serif}
+.copy{position:absolute;left:64px;top:0;bottom:0;display:flex;flex-direction:column;justify-content:center;gap:14px;width:600px;z-index:2}
+.logo{font-weight:800;letter-spacing:-.035em;line-height:1}
+.h{font-weight:700;line-height:1.14;letter-spacing:-.015em}
+.meta{font:400 15px "DM Mono",monospace;color:var(--soft)}
+canvas{position:absolute;right:0;top:0;height:100%}
+.lab{position:absolute;font:500 14px "DM Mono",monospace;letter-spacing:.02em;z-index:3;white-space:nowrap}
+</style></head><body><div id="a"><div class="copy"><div class="logo"></div><div class="h"></div><div class="meta"></div></div><canvas id="c"></canvas>
+<div class="lab" id="l1"></div><div class="lab" id="l2"></div><div class="lab" id="l3"></div></div>
+<script>
+const q=new URLSearchParams(location.search),mode=q.get('m')||'hero',W=1280,H=mode=='social'?640:mode=='icon'?1024:420;
+if(q.get('t')=='dark')document.body.classList.add('dark');
+const a=document.getElementById('a');a.style.width=(mode=='icon'?1024:W)+'px';a.style.height=H+'px';
+const S=getComputedStyle(document.body),v=n=>S.getPropertyValue(n).trim();
+const big=mode=='social';
+document.querySelector('.logo').textContent=mode=='icon'?'':'offload';document.querySelector('.logo').style.fontSize=(big?92:76)+'px';
+document.querySelector('.h').textContent=mode=='icon'?'':"Stop paying Claude to read what your Mac can read.";document.querySelector('.h').style.fontSize=(big?36:28)+'px';
+document.querySelector('.meta').textContent=mode=='icon'?'':'OCR · QR codes · speech · translation · PDF tables · classifiers';
+const cw=mode=='icon'?1024:600,c=document.getElementById('c');c.width=cw*2;c.height=H*2;c.style.width=cw+'px';const g=c.getContext('2d');g.scale(2,2);
+let seed=7;const R=()=>(seed=(seed*16807)%2147483647)/2147483647;
+const bx=mode=='icon'?470:330,bw=mode=='icon'?84:46,sz=mode=='icon'?20:9,gap=mode=='icon'?7:4;
+g.fillStyle=v('--bandsoft');g.beginPath();g.roundRect(bx-(mode=='icon'?60:26),mode=='icon'?120:(big?52:34),bw+(mode=='icon'?120:52),H-(mode=='icon'?240:(big?120:68)),mode=='icon'?60:18);g.fill();
+g.fillStyle=v('--band');g.beginPath();g.roundRect(bx,mode=='icon'?160:(big?72:54),bw,H-(mode=='icon'?320:(big?160:108)),mode=='icon'?28:12);g.fill();
+for(let x=mode=='icon'?90:20;x<bx-(mode=='icon'?80:38);x+=sz+gap)for(let y=mode=='icon'?150:(big?62:44);y<H-(mode=='icon'?150:(big?68:44));y+=sz+gap){const d=(x-(mode=='icon'?90:20))/(bx-(mode=='icon'?90:20));if(R()>0.2+d*.72){g.globalAlpha=.45+R()*.55;g.fillStyle=v('--raw');g.beginPath();g.roundRect(x,y,sz,sz,mode=='icon'?5:2);g.fill()}}
+g.globalAlpha=1;
+const n=mode=='icon'?3:5,oz=mode=='icon'?64:30,ox=mode=='icon'?760:480;
+for(let i=0;i<n;i++){const y=H/2+(i-(n-1)/2)*(oz+(mode=='icon'?26:16))-oz/2;g.fillStyle=v('--out');g.beginPath();g.roundRect(ox,y,oz*(mode=='icon'?1.9:2),oz,mode=='icon'?14:7);g.fill();g.fillStyle=v('--bg');for(let k=0;k<2;k++){g.fillRect(ox+oz*.28,y+oz*(.32+k*.26),oz*(k?.9:1.35),mode=='icon'?7:3)}}
+g.strokeStyle=v('--band');g.lineWidth=mode=='icon'?6:2.5;g.lineCap='round';const ax=bx+bw+(mode=='icon'?24:14),ae=ox-(mode=='icon'?22:12);g.beginPath();g.moveTo(ax,H/2);g.lineTo(ae,H/2);g.lineTo(ae-(mode=='icon'?16:7),H/2-(mode=='icon'?14:6));g.moveTo(ae,H/2);g.lineTo(ae-(mode=='icon'?16:7),H/2+(mode=='icon'?14:6));g.stroke();
+if(mode=='icon'){document.querySelector('.copy').style.display='none';c.style.right='auto';c.style.left='0'}
+else{const off=W-cw;const ly=H-(big?40:26);const set=(id,t,x,col)=>{const e=document.getElementById(id);e.textContent=t;e.style.left=(off+x)+'px';e.style.top=ly+'px';e.style.color=col};
+set('l1','your files',60,v('--soft'));set('l2','your Mac',bx-20,v('--band'));set('l3','for Claude',ox-6,v('--out'))}
+</script></body></html>

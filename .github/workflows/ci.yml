@@ -1,0 +1,14 @@
+name: CI
+on:
+  push:
+    branches: [main]
+  pull_request:
+jobs:
+  build:
+    runs-on: xcode-27
+    steps:
+      - uses: actions/checkout@v4
+      - run: sw_vers && swift --version
+      - run: swift build -c release
+      - run: .build/release/offload version
+      - run: python3 -m py_compile skills/offload/scripts/claude_map.py benchmarks/run.py
